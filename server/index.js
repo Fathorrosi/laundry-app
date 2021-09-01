@@ -5,6 +5,7 @@ const cors = require("cors");
 const fs = require('fs');
 const wbm = require('./wa-service');
 const util = require('util');
+const { async } = require("rxjs");
 
 app.use(cors());
 app.use(express.json());
@@ -25,7 +26,7 @@ console.log = function (d) { //
   log_stdout.write(getTime() + ' >> ' + util.format(d) + '\n');
 }
 
-const sendReport = (nama, handphone, blastType, tgl_masuk) => {
+sendReport = (nama, handphone, blastType, tgl_masuk) => {
   var pesan = '';
   var pesanSingle = fs.readFileSync('./file/pesanSingle.txt', 'utf8');
   var pesanBroadcast = fs.readFileSync('./file/pesanBroadcast.txt', 'utf8');
@@ -206,7 +207,7 @@ app.delete("/deletePaket/:id", (req, res) => {
   );
 });
 
-app.put("/update", (req, res) => {
+app.put("/update", async (req, res) => {
   const nama = req.body.nama;
   const handphone = req.body.handphone;
   const tgl_masuk = req.body.tgl_masuk;
@@ -224,7 +225,7 @@ app.put("/update", (req, res) => {
       }
     }
   );
-  // sendReport(nama, handphone, '0', getDate(tgl_masuk));
+  // await sendReport(nama, handphone, '0', getDate(tgl_masuk));
 });
 
 

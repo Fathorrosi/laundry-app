@@ -19,11 +19,16 @@ export default function UserList() {
       { id: id, nama: nama, handphone: handphone, tgl_masuk: tgl_masuk });
   };
 
+  const sendReport = (nama, handphone, tgl_masuk) => {
+    Axios.put("http://localhost:3001/sendReport",
+      { nama: nama, handphone: handphone, tgl_masuk: tgl_masuk });
+  };
+
   const formatter = (value) => {
     return (value).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
   }
 
-  const sendReport = (nama, handphone, tgl_masuk) => {
+  const sendNotif = (nama, handphone, tgl_masuk) => {
     Swal.fire({
       title: 'Apakah kamu yakin?',
       text: "Report akan dikirimkan kepada customer!",
@@ -32,16 +37,18 @@ export default function UserList() {
       confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33',
       confirmButtonText: 'Yes!'
-    }).then(async (result) => {
+    }).then((result) => {
       if (result.isConfirmed) {
-        Axios.put("http://localhost:3001/sendReport",
-          { nama: nama, handphone: handphone, tgl_masuk: tgl_masuk });
+        sendReport(nama, handphone, tgl_masuk);
         Swal.fire({
           icon: 'success',
           title: 'Report sedang dikirim!!\n Pilih menu Blast untuk melihat ' +
             'proses pengiriman pesan pada customer',
           showConfirmButton: true
         })
+        setTimeout(() => {
+          window.location.reload(false);
+        }, 5000);
       }
     })
   }
@@ -134,7 +141,7 @@ export default function UserList() {
             {params.row.report === 1 ? (
               <button className="statusSelesai">Report terkirim</button>
             ) : (
-              <button onClick={() => sendReport(params.row.nama,
+              <button onClick={() => sendNotif(params.row.nama,
                 params.row.handphone, params.row.tgl_masuk)} disabled={params.row.status === 'Proses'}
                 className="statusProses">Report tidak terkirim</button>
             )}
