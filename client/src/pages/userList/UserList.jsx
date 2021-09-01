@@ -23,6 +23,29 @@ export default function UserList() {
     return (value).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
   }
 
+  const sendReport = (nama, handphone, tgl_masuk) => {
+    Swal.fire({
+      title: 'Apakah kamu yakin?',
+      text: "Report akan dikirimkan kepada customer!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes!'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        Axios.put("http://localhost:3001/sendReport",
+          { nama: nama, handphone: handphone, tgl_masuk: tgl_masuk });
+        Swal.fire({
+          icon: 'success',
+          title: 'Report sedang dikirim!!\n Pilih menu Blast untuk melihat ' +
+            'proses pengiriman pesan pada customer',
+          showConfirmButton: true
+        })
+      }
+    })
+  }
+
   const updateStatus = (status, id, nama, handphone, tgl_masuk) => {
     Swal.fire({
       title: 'Apakah kamu yakin?',
@@ -111,13 +134,10 @@ export default function UserList() {
             {params.row.report === 1 ? (
               <button className="statusSelesai">Report terkirim</button>
             ) : (
-              <button className="statusProses">Report tidak terkirim</button>
+              <button onClick={() => sendReport(params.row.nama,
+                params.row.handphone, params.row.tgl_masuk)} disabled={params.row.status === 'Proses'}
+                className="statusProses">Report tidak terkirim</button>
             )}
-            {/* </Link> */}
-            {/* <DeleteOutline
-              className="userListDelete"
-              onClick={() => navigate(params.row.id)}
-            /> */}
           </>
         );
       },

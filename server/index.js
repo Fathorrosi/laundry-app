@@ -25,7 +25,7 @@ console.log = function (d) { //
   log_stdout.write(getTime() + ' >> ' + util.format(d) + '\n');
 }
 
-sendReport = (nama, handphone, blastType, tgl_masuk) => {
+const sendReport = (nama, handphone, blastType, tgl_masuk) => {
   var pesan = '';
   var pesanSingle = fs.readFileSync('./file/pesanSingle.txt', 'utf8');
   var pesanBroadcast = fs.readFileSync('./file/pesanBroadcast.txt', 'utf8');
@@ -224,7 +224,7 @@ app.put("/update", (req, res) => {
       }
     }
   );
-  sendReport(nama, handphone, '0', getDate(tgl_masuk));
+  // sendReport(nama, handphone, '0', getDate(tgl_masuk));
 });
 
 
@@ -268,6 +268,13 @@ app.get("/readLogFile", async (req, res) => {
   var log = fs.readFileSync('./file/log.txt', 'utf8');
   var qrcode = fs.readFileSync('./file/qrcode.txt', 'utf8');
   await res.send({ log: log, qrcode: qrcode });
+});
+
+app.put("/sendReport", async (req, res) => {
+  const nama = req.body.nama;
+  const handphone = req.body.handphone;
+  const tgl_masuk = req.body.tgl_masuk;
+  await sendReport(nama, handphone, '0', getDate(tgl_masuk));
 });
 
 
