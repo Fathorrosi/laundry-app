@@ -1,0 +1,124 @@
+.blast {
+    flex: 4;
+    /* width: 100%;
+    display: flex;  */
+    /* justify-content: space-between; */
+}
+
+.blastLog {
+    width: 600px;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    margin-top: 20px;
+    margin-right: 20px;
+}
+
+.blastQrcode {
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    margin-top: 50px;
+    margin-right: 10px;
+    margin-left: 20px;
+    padding-bottom: 20px;
+}
+
+.broadcastBlast {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+.blasttable {
+    max-height: 40%;
+}
+
+.userListComp {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.userListUser {
+    display: flex;
+    align-items: center;
+}
+
+.userListImg {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+}
+
+.userListDetail {
+    border: none;
+    border-radius: 10px;
+    padding: 5px 10px;
+    background-color: #1478d4;
+    color: white;
+    cursor: pointer;
+    margin-right: 20px;
+}
+
+.userListUpdate {
+    border: none;
+    border-radius: 10px;
+    padding: 5px 10px;
+    background-color: #f34dc1;
+    color: white;
+    cursor: pointer;
+    margin-right: 20px;
+}
+
+.blastListEdit {
+    color: rgb(185, 13, 228);
+    cursor: pointer;
+}
+
+.statusSelesai {
+    border: none;
+    border-radius: 10px;
+    padding: 5px 10px;
+    background-color: #db8f2c;
+    color: white;
+    height: 25px;
+    text-align: center;
+}
+
+.statusProses {
+    border: none;
+    border-radius: 10px;
+    padding: 5px 10px;
+    background-color: #3bb077;
+    color: white;
+    height: 25px;
+    text-align: center;
+}
+
+.broadcastBlassBtn {
+    border: none;
+    background-color: #e06d37;
+    color: white;
+    padding: 7px 10px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    height: 100px;
+    width: 220px;
+    font-size: 16px;
+    margin-top: 50px;
+    margin-left: 30px;
+}
+
+.broadcastBlassBtn:hover {
+    background-color: #f16422;
+}
+
+.log {
+    width: 100%;
+    height: 100%;
+    resize: none;
+}
+
