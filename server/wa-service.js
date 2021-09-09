@@ -8,6 +8,7 @@ var rimraf = require("rimraf");
 const fs = require("fs");
 
 let browser = null;
+let totalExecute = 0;
 let page = null;
 let counter = { fails: 0, success: 0 }
 const tmpPath = path.resolve(__dirname, './tmp');
@@ -182,6 +183,10 @@ async function sendTo(phoneOrContact, message, tgl_masuk, blassType) {
             db.query("UPDATE transaction INNER JOIN customer ON transaction.customer_id = customer.id " +
                 "SET transaction.report = '1' " +
                 "WHERE customer.handphone = '" + phone + "' and transaction.tgl_masuk = '" + tgl_masuk + "'");
+        } else {
+            db.query("UPDATE transaction INNER JOIN customer ON transaction.customer_id = customer.id " +
+                "SET transaction.isBroadcast = '1' " +
+                "WHERE customer.handphone = '" + phone + "'");
         }
         counter.success++;
     } catch (err) {
@@ -190,7 +195,7 @@ async function sendTo(phoneOrContact, message, tgl_masuk, blassType) {
         console.log(`${phone} Failed`)
         if (blassType === '0') {
             db.query("UPDATE transaction INNER JOIN customer ON transaction.customer_id = customer.id " +
-                "SET transaction.report = '1' " +
+                "SET transaction.report = '0' " +
                 "WHERE customer.handphone = '" + phone + "' and transaction.tgl_masuk = '" + tgl_masuk + "'");
         }
         counter.fails++;
@@ -204,7 +209,9 @@ async function sendTo(phoneOrContact, message, tgl_masuk, blassType) {
  */
 async function send(phoneOrContacts, message, tgl_masuk, blassType) {
     console.log("Sending Message...\r");
+    totalExecute = 0;
     for (let phoneOrContact of phoneOrContacts) {
+        totalExecute = totalExecute + 1;
         await sendTo(phoneOrContact, message, tgl_masuk, blassType);
     }
 }
@@ -229,6 +236,7 @@ function generateCustomMessage(contact, messagePrototype) {
 async function end() {
     await browser.close();
     console.log(`Result: ${counter.success} sent, ${counter.fails} failed`);
+    return "Finished"
 }
 
 module.exports = {

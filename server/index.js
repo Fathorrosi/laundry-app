@@ -5,7 +5,12 @@ const cors = require("cors");
 const fs = require('fs');
 const wbm = require('./wa-service');
 const util = require('util');
+const server = require('http').createServer(app);
 const { async } = require("rxjs");
+
+const io = require('socket.io')(server, {
+  transports: ['websocket', 'polling']
+})
 
 app.use(cors());
 app.use(express.json());
@@ -22,28 +27,39 @@ var log_file = fs.createWriteStream(__dirname + '/file/log.txt', { flags: 'w' })
 var log_stdout = process.stdout;
 
 console.log = function (d) { //
-  log_file.write(getTime() + ' >> ' + util.format(d) + '\n');
-  log_stdout.write(getTime() + ' >> ' + util.format(d) + '\n');
+  log_file.write(getDateTime() + ' >> ' + util.format(d) + '\n');
+  log_stdout.write(getDateTime() + ' >> ' + util.format(d) + '\n');
 }
 
-sendReport = (nama, handphone, blastType, tgl_masuk) => {
+const sendReport = (nama, handphone, blastType, tgl_masuk) => {
   var pesan = '';
   var pesanSingle = fs.readFileSync('./file/pesanSingle.txt', 'utf8');
   var pesanBroadcast = fs.readFileSync('./file/pesanBroadcast.txt', 'utf8');
-  var merged = pesanSingle.replace("(?)", nama)
   var nomor = handphone;
 
-  wbm.start().then(async () => {
-    if (blastType === '1') {
+  if (blastType === '0') {
+    wbm.start().then(async () => {
+      for (let i = 0; i < nomor.length; i++) {
+        pesan = pesanSingle.replace("(?)", nama[i])
+        nomor = handphone[i];
+        await wbm.send([nomor], pesan, tgl_masuk, blastType);
+      }
+      await wbm.end().then(result => {
+        console.log(getTime() + ' ' + result)
+      });
+    }).catch(err => console.log(err));
+  } else {
+    wbm.start().then(async () => {
       pesan = pesanBroadcast
-    }
-    else { pesan = merged, nomor = [nomor] }
-    await wbm.send(nomor, pesan, tgl_masuk, blastType);
-    await wbm.end();
-  }).catch(err => console.log(err));
+      await wbm.send(nomor, pesan, tgl_masuk, blastType);
+      await wbm.end().then(result => {
+        console.log(getTime() + ' ' + result)
+      });
+    }).catch(err => console.log(err));
+  }
 }
 
-getDate = (date) => {
+const getDate = (date) => {
   let d = new Date(date);
   let ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(d);
   let mo = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(d);
@@ -51,7 +67,7 @@ getDate = (date) => {
   return ye + '-' + mo + '-' + da;
 }
 
-getTime = () => {
+const getDateTime = () => {
   let d = new Date();
   let hh = new Intl.DateTimeFormat('en', { hour: '2-digit' }).format(d);
   let mm = new Intl.DateTimeFormat('en', { minute: '2-digit' }).format(d);
@@ -59,24 +75,22 @@ getTime = () => {
   return getTglMasuk() + ' ' + hh + ':' + mm + ':' + ss;
 }
 
-getTglMasuk = () => {
+const getTime = () => {
+  let d = new Date();
+  let hh = new Intl.DateTimeFormat('en', { hour: '2-digit' }).format(d);
+  let mm = new Intl.DateTimeFormat('en', { minute: '2-digit' }).format(d);
+  return hh + ':' + mm;
+}
+
+const getTglMasuk = () => {
   let d = new Date();
   let ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(d);
   let mo = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(d);
   let da = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(d);
-
   return `${ye}-${mo}-${da}`;
 };
 
-getTglMasuk = () => {
-  let d = new Date();
-  let ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(d);
-  let mo = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(d);
-  let da = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(d);
-  return `${ye}-${mo}-${da}`;
-};
-
-getTglSelesai = (addDate) => {
+const getTglSelesai = (addDate) => {
   let d = new Date();
   d.setDate(d.getDate() + addDate);
   let ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(d);
@@ -85,25 +99,35 @@ getTglSelesai = (addDate) => {
   return `${ye}-${mo}-${da}`;
 };
 
-getHargaTotal = (hargaPerKg, berat, diskon) => {
+const getHargaTotal = (hargaPerKg, berat, diskon) => {
   if (diskon !== 0) { return ((hargaPerKg * berat) - ((diskon / 100) * (hargaPerKg * berat))) }
   else { return (hargaPerKg * berat) }
 }
 
-app.post("/addTransaction", (req, res) => {
-  const nama = req.body.nama;
-  const handphone = req.body.handphone;
-  const jenis = req.body.jenis;
-  const berat = req.body.berat;
-  const paket = req.body.paket;
-  const lama_cuci = req.body.lama_cuci;
-  const hargaPerKg = req.body.harga;
-  const diskon = req.body.diskon;
-  const hargaTotal = getHargaTotal(hargaPerKg, berat, diskon)
-  const keterangan = req.body.keterangan;
-  const status = 'Proses';
-  const tgl_masuk = getTglMasuk();
-  const tgl_selesai = getTglSelesai(lama_cuci);
+app.post("/addtransaction", (req, res) => {
+  let nama = req.body.nama;
+  let handphone = req.body.handphone;
+  let jenis = req.body.jenis;
+  let berat = req.body.berat;
+  let paket = req.body.paket;
+  let lama_cuci = req.body.lama_cuci;
+  let hargaPerKg = req.body.harga;
+  let diskon = req.body.diskon;
+  let hargaTotal = getHargaTotal(hargaPerKg, berat, diskon);
+  let keterangan = req.body.keterangan;
+  let status = 'Proses';
+  let tgl_masuk = getTglMasuk();
+  let tgl_selesai = getTglSelesai(lama_cuci);
+  let jumlah_pakaian = req.body.jumlahPakaian;
+  let jenis_satuan = req.body.jenisSatuan;
+
+  if (jenis === 'satuan') {
+    hargaTotal = getHargaTotal(hargaPerKg, jumlah_pakaian, diskon);
+    berat = '';
+    paket = jenis_satuan;
+  } else if (jenis === 'kiloan') {
+    jenis_satuan = '';
+  }
 
   db.query(
     "INSERT INTO customer (nama, handphone) VALUES (?,?)",
@@ -113,9 +137,9 @@ app.post("/addTransaction", (req, res) => {
         console.log(err);
       } else {
         await db.query(
-          "INSERT into transaction(customer_id, berat, paket, harga, jenis, tgl_masuk, tgl_selesai, status, keterangan, report)" +
-          "VALUES((SELECT id FROM customer ORDER BY id DESC LIMIT 1), ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [berat, paket, hargaTotal, jenis, tgl_masuk, tgl_selesai, status, keterangan, 0]
+          "INSERT into transaction(customer_id, berat, paket, harga, jenis, tgl_masuk, tgl_selesai, status, keterangan, report, jumlah_pakaian, jenis_satuan)" +
+          "VALUES((SELECT id FROM customer ORDER BY id DESC LIMIT 1), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [berat, paket, hargaTotal, jenis, tgl_masuk, tgl_selesai, status, keterangan, 0, jumlah_pakaian, jenis_satuan]
         );
         res.send("Values Inserted");
       }
@@ -152,7 +176,7 @@ app.get("/transactions", (req, res) => {
   });
 });
 
-app.get("/getTransactionById/:id", (req, res) => {
+app.get("/gettransactionById/:id", (req, res) => {
   const id = req.params.id;
   db.query("select customer.nama, customer.handphone, transaction.* from customer INNER JOIN transaction on transaction.customer_id = customer.id where transaction.id = ?", [id], (err, result) => {
     if (err) {
@@ -249,11 +273,23 @@ app.put("/updateMessage", (req, res) => {
   res.send('Message is updated!!');
 });
 
-app.put("/updatePhone", (req, res) => {
-  var listPhone = req.body.handphone;
+app.put("/sendBroadcast", (req, res) => {
+  db.query("UPDATE transaction INNER JOIN customer ON transaction.customer_id = customer.id " +
+    "SET transaction.isBroadcast = '0' ");
+  const listPhone = req.body.handphone;
   sendReport(' ', listPhone, '1', ' ');
-  res.send('Phone is updated and already to broadcast!!');
+  res.send('Broadcast Terkirim')
 });
+
+
+app.put("/sendReport", async (req, res) => {
+  const nama = req.body.nama;
+  const handphone = req.body.handphone;
+  const date = new Date();
+  sendReport(nama, handphone, '0', getDate(date));
+  res.send('Report Terkirim');
+});
+
 
 app.get("/getCustomers", (req, res) => {
   db.query("select nama, handphone FROM customer", (err, result) => {
@@ -271,14 +307,43 @@ app.get("/readLogFile", async (req, res) => {
   await res.send({ log: log, qrcode: qrcode });
 });
 
-app.put("/sendReport", async (req, res) => {
-  const nama = req.body.nama;
-  const handphone = req.body.handphone;
-  const tgl_masuk = req.body.tgl_masuk;
-  await sendReport(nama, handphone, '0', getDate(tgl_masuk));
+app.get("/dataReport", async (req, res) => {
+  let date = new Date();
+  db.query("SELECT customer.id, customer.nama, customer.handphone, transaction.report FROM customer INNER JOIN transaction ON transaction.customer_id = customer.id " +
+    "WHERE transaction.status = 'Selesai' AND transaction.tgl_masuk = '" + getDate(date) + "'", (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+      }
+    });
+});
+
+app.get("/dataBroadcast", async (req, res) => {
+  let date = new Date();
+  db.query("SELECT customer.id, customer.handphone, transaction.report, transaction.isBroadcast FROM customer INNER JOIN transaction ON transaction.customer_id = customer.id", (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      res.send(result);
+    }
+  });
 });
 
 
-app.listen(3001, () => {
+// io.on('connection', (client) => {
+//   setInterval(() => {
+//     var log = fs.readFileSync('./file/log.txt', 'utf8');
+//     var qrcode = fs.readFileSync('./file/qrcode.txt', 'utf8');
+//     client.emit('log', {
+//       log: log, qrcode: qrcode
+//     })
+//   }, 1000);
+// });
+
+server.listen(3001, () => {
   process.stdout.write("Yey, your server is running on port 3001");
 });
+
+
+

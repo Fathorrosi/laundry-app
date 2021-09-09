@@ -135,7 +135,7 @@ export default function NewUser() {
           <label>Paket</label>
           <select className="newUserSelect" onChange={(event) => {
             getDetailPaket(event);
-          }} name="active" id="active">
+          }} >
             <option key={0}>-</option>)
             {
               ListPaket.map((x) =>

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Axios from "axios";
 import Swal from 'sweetalert2'
 import QRCode from "react-qr-code";
+import io from 'socket.io-client';
 
 
 export default function Blast() {
@@ -12,6 +13,10 @@ export default function Blast() {
     const [customers, setCustomers] = useState([]);
     const [log, setLog] = useState('');
     const [qrcode, setQrcode] = useState('');
+
+    const socket = io('http://localhost:3001', {
+        transports: ['websocket', 'polling']
+    });
 
     useEffect(() => {
         Axios.get("http://localhost:3001/getMessage").then((response) => {
@@ -21,14 +26,12 @@ export default function Blast() {
             setCustomers(response.data);
         });
         var textarea = document.getElementById('log');
-        const interval = setInterval(() => {
-            Axios.get("http://localhost:3001/readLogFile").then((response) => {
-                setLog(response.data.log)
-                setQrcode(response.data.qrcode)
-                textarea.scrollTop = textarea.scrollHeight;
-            });
-        }, 2000);
-        return () => clearInterval(interval);
+        socket.on('log', (data) => {
+            setLog(data.log)
+            setQrcode(data.qrcode)
+            textarea.scrollTop = textarea.scrollHeight;
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const handleEdit = (tipe) => {
